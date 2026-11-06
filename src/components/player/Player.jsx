@@ -11,6 +11,7 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
     () => provider.buildUrl({ type: item.mediaType, id: item.id, season, episode, startAt, autoplay }),
     [provider.id, item.id, item.mediaType, season, episode, startAt, autoplay]
   );
+  const iframeRef = useRef(null);
   const state = useRef({});
 
   useEffect(() => {
@@ -55,11 +56,20 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
     <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
       <iframe
         key={src}
+        ref={iframeRef}
         src={src}
         title={`${item.title}${isTv ? ` season ${season} episode ${episode}` : ''} player`}
         allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
         allowFullScreen
         referrerPolicy="origin"
+        onLoad={() => {
+          if (provider.id === 'vidrift' && startAt > 0) {
+            iframeRef.current?.contentWindow?.postMessage(
+              { type: 'vidrift:resume', currentTime: startAt },
+              provider.origin
+            );
+          }
+        }}
         className="absolute inset-0 h-full w-full"
       />
     </div>
