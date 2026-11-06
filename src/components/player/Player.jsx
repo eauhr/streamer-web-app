@@ -25,7 +25,7 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
       });
     };
     const onMessage = (e) => {
-      if (!String(e.origin).includes(provider.originMatch)) return;
+      if (e.origin !== provider.origin) return;
       const m = parsePlayerMessage(e.data);
       if (!m) return;
       if (m.duration) state.current.duration = m.duration;
