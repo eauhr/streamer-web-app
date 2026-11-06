@@ -17,10 +17,21 @@ async function get(path, params = {}) {
 
 export async function tmdbSearch(query, page = 1) {
   const data = await get('/search/multi', { query, include_adult: 'false', language: 'en-US', page });
-  const items = (data.results || [])
-    .filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
-    .map((r) => normalizeMedia(r));
-  return { items, page: data.page || page, totalPages: data.total_pages || 1, totalResults: data.total_results || items.length };
+  const items = (data.results || []).flatMap((result) => {
+    if (result.media_type === 'movie' || result.media_type === 'tv') {
+      return [normalizeMedia(result)];
+    }
+    if (result.media_type === 'person') {
+      return (result.known_for || [])
+        .filter((item) => item.media_type === 'movie' || item.media_type === 'tv')
+        .map((item) => normalizeMedia(item, item.media_type));
+    }
+    return [];
+  });
+  const uniqueItems = new Map();
+  items.forEach((item) => uniqueItems.set(`${item.mediaType}:${item.id}`, item));
+  const results = [...uniqueItems.values()];
+  return { items: results, page: data.page || page, totalPages: data.total_pages || 1, totalResults: data.total_results || results.length };
 }
 
 export async function tmdbBrowse(type, { page = 1, genre = null, sortBy = 'popularity.desc' } = {}) {
@@ -59,6 +70,11 @@ export async function tmdbWatchProviders(type, id) {
 export async function tmdbDetails(type, id) {
   const data = await get(`/${type}/${id}`, { append_to_response: 'credits,videos', language: 'en-US' });
   return normalizeMedia(data, type);
+}
+
+export async function tmdbRecommendations(type, id, page = 1) {
+  const data = await get(`/${type}/${id}/recommendations`, { page, language: 'en-US' });
+  return (data.results || []).map((item) => normalizeMedia(item, type));
 }
 
 export async function tmdbTrending(window = 'week') {

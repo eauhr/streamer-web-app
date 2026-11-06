@@ -1,4 +1,14 @@
-const ALLOWED_PATH = /^\/(?:search\/multi|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|(?:movie|tv)\/(?:popular|top_rated|\d+(?:\/watch\/providers)?))$/;
+const ALLOWED_PATH = /^\/(?:search\/multi|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|(?:movie|tv)\/(?:popular|top_rated|\d+(?:\/(?:watch\/providers|recommendations))?))$/;
+
+function getProxyPath(req, requestUrl) {
+  const routePath = req.query?.path;
+  if (Array.isArray(routePath) && routePath.length) return `/${routePath.join('/')}`;
+  if (typeof routePath === 'string' && routePath) return `/${routePath.replace(/^\/+/, '')}`;
+
+  const pathname = requestUrl.pathname.replace(/^\/api\/tmdb(?=\/|$)/, '');
+  if (!pathname || pathname === '/') return '/';
+  return pathname.startsWith('/') ? pathname : `/${pathname}`;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -8,14 +18,20 @@ export default async function handler(req, res) {
   }
 
   const requestUrl = new URL(req.url || '/', 'http://localhost');
-  const path = requestUrl.pathname.slice('/api/tmdb'.length);
-  if (!ALLOWED_PATH.test(path)) {
-    res.status(404).json({ error: 'TMDB endpoint not allowed' });
+  const path = getProxyPath(req, requestUrl);
+  const token = process.env.TMDB_API_READ_TOKEN;
+  const apiKey = process.env.TMDB_API_KEY;
+
+  if (path === '/status') {
+    res.status(200).json({ enabled: Boolean(token || apiKey) });
     return;
   }
 
-  const token = process.env.TMDB_API_READ_TOKEN;
-  const apiKey = process.env.TMDB_API_KEY;
+  if (!ALLOWED_PATH.test(path)) {
+    res.status(404).json({ error: 'TMDB endpoint not allowed', path });
+    return;
+  }
+
   if (!token && !apiKey) {
     res.status(503).json({ error: 'TMDB API credentials are not configured' });
     return;

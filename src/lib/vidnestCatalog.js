@@ -66,16 +66,6 @@ export async function vidnestSearch(query, page = 1) {
   };
 }
 
-export async function vidnestBrowse(type, page = 1) {
-  const data = await request(type === 'tv' ? 'tv' : 'movies', { page, resultsPerPage: 20 });
-  return {
-    items: (data.data || []).map((entry) => normalizeEntry(entry, type)).filter(Boolean),
-    page: Number(data.current_page) || page,
-    totalPages: Number(data.last_page) || 1,
-    totalResults: Number(data.total_count ?? data.total) || 0,
-  };
-}
-
 export async function vidnestDetails(type, id) {
   const isImdbId = /^tt\d+$/i.test(String(id));
   const key = isImdbId ? (type === 'tv' ? 'imdbid' : 'imdb_id') : 'tmdbid';

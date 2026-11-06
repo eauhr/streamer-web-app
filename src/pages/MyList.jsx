@@ -9,7 +9,7 @@ import PosterGrid from '@/components/media/PosterGrid';
 export default function MyList() {
   const saved = useStore(() => listStore.all());
   const items = saved
-    .map((s) => CATALOG.find((i) => i.mediaType === s.type && String(i.id) === s.id))
+    .map((s) => s.item || CATALOG.find((i) => i.mediaType === s.type && String(i.id) === s.id))
     .filter(Boolean);
 
   return (

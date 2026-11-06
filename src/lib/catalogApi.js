@@ -1,10 +1,10 @@
 import { CATALOG, HERO_IDS } from '@/lib/catalog';
 import { genreNames } from '@/lib/tmdb';
-import { tmdbEnabled, tmdbSearch, tmdbDetails, tmdbTrending, tmdbBrowse, tmdbGenres, tmdbProviderRegions, tmdbWatchProviders } from '@/lib/tmdbClient';
-import { vidnestBrowse, vidnestDetails, vidnestSearch } from '@/lib/vidnestCatalog';
+import { tmdbEnabled, tmdbSearch, tmdbDetails, tmdbTrending, tmdbBrowse, tmdbGenres, tmdbProviderRegions, tmdbWatchProviders, tmdbRecommendations } from '@/lib/tmdbClient';
+import { vidnestDetails, vidnestSearch } from '@/lib/vidnestCatalog';
 
-// Single data access layer. Uses TMDB and VidNest live catalogs when available,
-// and falls back to the curated local catalog only when both are unavailable.
+// TMDB supplies the main catalog; VidNest adds titles it can play to search.
+// The curated local catalog remains a fallback when live sources are unavailable.
 const byType = (type) => CATALOG.filter((i) => i.mediaType === type);
 const find = (type, id) => CATALOG.find((i) => i.mediaType === type && String(i.id) === String(id)) || null;
 
@@ -18,7 +18,10 @@ const localSearch = (query) => {
 };
 
 export const catalogApi = {
-  hero: async () => HERO_IDS.map((id) => CATALOG.find((i) => i.id === id)).filter(Boolean),
+  hero: async () => {
+    if (tmdbEnabled()) { try { return (await tmdbTrending()).slice(0, 5); } catch { /* fall back to local */ } }
+    return HERO_IDS.map((id) => CATALOG.find((i) => i.id === id)).filter(Boolean);
+  },
   trending: async () => {
     if (tmdbEnabled()) { try { return await tmdbTrending(); } catch { /* fall back to local */ } }
     return CATALOG.slice(0, 14);
@@ -32,24 +35,7 @@ export const catalogApi = {
     return [...byType(type)].sort((a, b) => b.voteAverage - a.voteAverage);
   },
   browse: async (type, page = 1, genre = null) => {
-    const results = await Promise.allSettled([
-      tmdbEnabled() ? tmdbBrowse(type, { page, genre }) : Promise.reject(new Error('TMDB is not enabled')),
-      genre == null ? vidnestBrowse(type, page) : Promise.reject(new Error('VidNest does not provide genre filtering')),
-    ]);
-    const sources = results.filter((result) => result.status === 'fulfilled').map((result) => result.value);
-    if (sources.length) {
-      const uniqueItems = new Map();
-      sources.forEach(({ items = [] }) => items.forEach((item) => {
-        const key = `${item.mediaType}:${item.id}`;
-        if (!uniqueItems.has(key)) uniqueItems.set(key, item);
-      }));
-      return {
-        items: [...uniqueItems.values()],
-        page,
-        totalPages: Math.max(1, ...sources.map((result) => result.totalPages || 1)),
-        totalResults: Math.max(0, ...sources.map((result) => result.totalResults || 0)),
-      };
-    }
+    if (tmdbEnabled()) { try { return await tmdbBrowse(type, { page, genre }); } catch { /* fall back to local */ } }
     const local = byType(type);
     const filtered = genre ? local.filter((item) => item.genreIds.includes(Number(genre))) : local;
     const pageSize = 24;
@@ -71,7 +57,19 @@ export const catalogApi = {
     if (!tmdbEnabled()) return {};
     try { return await tmdbWatchProviders(type, id); } catch { return {}; }
   },
-  trailers: async () => CATALOG.filter((i) => i.trailerKey).slice(0, 10),
+  trailers: async () => {
+    if (tmdbEnabled()) {
+      try {
+        const trending = await tmdbTrending();
+        const details = await Promise.allSettled(trending.slice(0, 12).map((item) => tmdbDetails(item.mediaType, item.id)));
+        const withTrailers = details
+          .filter((result) => result.status === 'fulfilled' && result.value?.trailerKey)
+          .map((result) => result.value);
+        if (withTrailers.length) return withTrailers.slice(0, 10);
+      } catch { /* fall back to local */ }
+    }
+    return CATALOG.filter((i) => i.trailerKey).slice(0, 10);
+  },
   details: async (type, id) => {
     if (tmdbEnabled()) { try { return await tmdbDetails(type, id); } catch { /* fall back to local */ } }
     try {
@@ -94,8 +92,21 @@ export const catalogApi = {
       return { items, page: 1, totalPages: 1, totalResults: items.length };
     }
 
+    const tmdbItems = tmdbResult.status === 'fulfilled' ? tmdbResult.value.items : [];
+    const vidnestItems = vidnestResult.status === 'fulfilled' ? vidnestResult.value.items : [];
+    const tmdbKeys = new Set(tmdbItems.map((item) => `${item.mediaType}:${item.id}`));
+    const itemsToEnrich = tmdbEnabled()
+      ? vidnestItems.filter((item) => /^\d+$/.test(String(item.id)) && !tmdbKeys.has(`${item.mediaType}:${item.id}`)).slice(0, 8)
+      : [];
+    const enrichedResults = await Promise.allSettled(
+      itemsToEnrich.map((item) => tmdbDetails(item.mediaType, item.id))
+    );
+    const enrichedItems = enrichedResults
+      .filter((result) => result.status === 'fulfilled' && result.value)
+      .map((result) => result.value);
+
     const uniqueItems = new Map();
-    results.forEach(({ items = [] }) => items.forEach((item) => {
+    [tmdbItems, enrichedItems, vidnestItems].forEach((items) => items.forEach((item) => {
       const key = `${item.mediaType}:${item.id}`;
       if (!uniqueItems.has(key)) uniqueItems.set(key, item);
     }));
@@ -106,12 +117,16 @@ export const catalogApi = {
       totalResults: Math.max(0, ...results.map((result) => result.totalResults || 0)),
     };
   },
-  related: async (item) =>
-    CATALOG.filter((i) => i.id !== item.id)
+  related: async (item) => {
+    if (tmdbEnabled()) {
+      try { return await tmdbRecommendations(item.mediaType, item.id); } catch { /* fall back to local */ }
+    }
+    return CATALOG.filter((i) => i.id !== item.id)
       .map((i) => ({ i, score: i.genreIds.filter((g) => item.genreIds.includes(g)).length + (i.mediaType === item.mediaType ? 0.5 : 0) }))
       .filter((x) => x.score > 0.5)
       .sort((a, b) => b.score - a.score)
       .slice(0, 12)
-      .map((x) => x.i),
+      .map((x) => x.i);
+  },
   genresFor: (type) => [...new Set(byType(type).flatMap((i) => i.genreIds))],
 };

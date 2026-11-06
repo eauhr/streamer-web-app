@@ -29,9 +29,19 @@ export const listStore = {
   toggle(item) {
     const list = read(KEYS.list, []);
     const exists = list.some((i) => same(i, item.mediaType, item.id));
+    const snapshot = {
+      id: String(item.id),
+      mediaType: item.mediaType,
+      title: item.title,
+      posterPath: item.posterPath ?? null,
+      backdropPath: item.backdropPath ?? null,
+      releaseDate: item.releaseDate || '',
+      voteAverage: item.voteAverage || 0,
+      genreIds: item.genreIds || [],
+    };
     write(KEYS.list, exists
       ? list.filter((i) => !same(i, item.mediaType, item.id))
-      : [{ id: String(item.id), type: item.mediaType, addedAt: Date.now() }, ...list]);
+      : [{ id: String(item.id), type: item.mediaType, addedAt: Date.now(), item: snapshot }, ...list]);
     return !exists;
   },
 };
