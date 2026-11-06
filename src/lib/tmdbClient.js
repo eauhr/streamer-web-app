@@ -6,7 +6,8 @@ const BASE = '/api/tmdb';
 export const tmdbEnabled = () => import.meta.env.VITE_TMDB_ENABLED === true;
 
 async function get(path, params = {}) {
-  const url = new URL(`${BASE}${path}`, window.location.origin);
+  const url = new URL(BASE, window.location.origin);
+  url.searchParams.set('path', path);
   Object.entries(params).forEach(([k, v]) => {
     if (v != null && v !== '') url.searchParams.set(k, String(v));
   });

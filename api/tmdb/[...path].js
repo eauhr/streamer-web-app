@@ -39,7 +39,9 @@ export default async function handler(req, res) {
 
   try {
     const target = new URL(`https://api.themoviedb.org/3${path}`);
-    requestUrl.searchParams.forEach((value, key) => target.searchParams.set(key, value));
+    requestUrl.searchParams.forEach((value, key) => {
+      if (key !== 'path') target.searchParams.set(key, value);
+    });
     if (!token && apiKey) target.searchParams.set('api_key', apiKey);
 
     const upstream = await fetch(target, {

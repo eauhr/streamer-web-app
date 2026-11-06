@@ -94,9 +94,10 @@ export const catalogApi = {
 
     const tmdbItems = tmdbResult.status === 'fulfilled' ? tmdbResult.value.items : [];
     const vidnestItems = vidnestResult.status === 'fulfilled' ? vidnestResult.value.items : [];
-    const tmdbKeys = new Set(tmdbItems.map((item) => `${item.mediaType}:${item.id}`));
     const itemsToEnrich = tmdbEnabled()
-      ? vidnestItems.filter((item) => /^\d+$/.test(String(item.id)) && !tmdbKeys.has(`${item.mediaType}:${item.id}`)).slice(0, 8)
+      ? [...new Map([...tmdbItems, ...vidnestItems]
+        .filter((item) => /^\d+$/.test(String(item.id)) && (!item.posterPath || !item.overview))
+        .map((item) => [`${item.mediaType}:${item.id}`, item])).values()].slice(0, 8)
       : [];
     const enrichedResults = await Promise.allSettled(
       itemsToEnrich.map((item) => tmdbDetails(item.mediaType, item.id))
@@ -106,10 +107,26 @@ export const catalogApi = {
       .map((result) => result.value);
 
     const uniqueItems = new Map();
-    [tmdbItems, enrichedItems, vidnestItems].forEach((items) => items.forEach((item) => {
+    [...vidnestItems, ...tmdbItems, ...enrichedItems].forEach((item) => {
       const key = `${item.mediaType}:${item.id}`;
-      if (!uniqueItems.has(key)) uniqueItems.set(key, item);
-    }));
+      const previous = uniqueItems.get(key);
+      if (!previous) {
+        uniqueItems.set(key, item);
+        return;
+      }
+      uniqueItems.set(key, {
+        ...previous,
+        ...item,
+        title: item.title || previous.title,
+        overview: item.overview || previous.overview,
+        posterPath: item.posterPath || previous.posterPath,
+        backdropPath: item.backdropPath || previous.backdropPath,
+        genreIds: item.genreIds?.length ? item.genreIds : previous.genreIds,
+        cast: item.cast?.length ? item.cast : previous.cast,
+        creators: item.creators?.length ? item.creators : previous.creators,
+        seasons: item.seasons?.length ? item.seasons : previous.seasons,
+      });
+    });
     return {
       items: [...uniqueItems.values()],
       page,

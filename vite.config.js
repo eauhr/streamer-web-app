@@ -11,7 +11,7 @@ function tmdbProxyPlugin({ token, apiKey }) {
       res.end(JSON.stringify({ enabled }));
       return;
     }
-    if (!requestUrl.pathname.startsWith('/api/tmdb/')) return next();
+    if (requestUrl.pathname !== '/api/tmdb' && !requestUrl.pathname.startsWith('/api/tmdb/')) return next();
     if (req.method !== 'GET') {
       res.statusCode = 405;
       res.end('Method not allowed');
@@ -24,7 +24,8 @@ function tmdbProxyPlugin({ token, apiKey }) {
       return;
     }
 
-    const path = requestUrl.pathname.slice('/api/tmdb'.length);
+    const requestedPath = requestUrl.searchParams.get('path') || requestUrl.pathname.slice('/api/tmdb'.length);
+    const path = requestedPath.startsWith('/') ? requestedPath : `/${requestedPath}`;
     const allowed = /^\/(?:search\/multi|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|(?:movie|tv)\/(?:popular|top_rated|\d+(?:\/(?:watch\/providers|recommendations))?))$/;
     if (!allowed.test(path)) {
       res.statusCode = 404;
@@ -34,7 +35,9 @@ function tmdbProxyPlugin({ token, apiKey }) {
 
     try {
       const target = new URL(`https://api.themoviedb.org/3${path}`);
-      requestUrl.searchParams.forEach((value, key) => target.searchParams.set(key, value));
+      requestUrl.searchParams.forEach((value, key) => {
+        if (key !== 'path') target.searchParams.set(key, value);
+      });
       if (!token && apiKey) target.searchParams.set('api_key', apiKey);
       const upstream = await fetch(target, {
         headers: {
