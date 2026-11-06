@@ -1,9 +1,10 @@
 import { CATALOG, HERO_IDS } from '@/lib/catalog';
 import { genreNames } from '@/lib/tmdb';
 import { tmdbEnabled, tmdbSearch, tmdbDetails, tmdbTrending, tmdbBrowse, tmdbGenres, tmdbProviderRegions, tmdbWatchProviders } from '@/lib/tmdbClient';
+import { vidnestBrowse, vidnestDetails, vidnestSearch } from '@/lib/vidnestCatalog';
 
-// Single data access layer. Uses live TMDB when a key is set in tmdbClient.js,
-// and falls back to the curated local catalog when it's missing or a call fails.
+// Single data access layer. Uses TMDB and VidNest live catalogs when available,
+// and falls back to the curated local catalog only when both are unavailable.
 const byType = (type) => CATALOG.filter((i) => i.mediaType === type);
 const find = (type, id) => CATALOG.find((i) => i.mediaType === type && String(i.id) === String(id)) || null;
 
@@ -31,8 +32,23 @@ export const catalogApi = {
     return [...byType(type)].sort((a, b) => b.voteAverage - a.voteAverage);
   },
   browse: async (type, page = 1, genre = null) => {
-    if (tmdbEnabled()) {
-      try { return await tmdbBrowse(type, { page, genre }); } catch { /* fall back to local */ }
+    const results = await Promise.allSettled([
+      tmdbEnabled() ? tmdbBrowse(type, { page, genre }) : Promise.reject(new Error('TMDB is not enabled')),
+      genre == null ? vidnestBrowse(type, page) : Promise.reject(new Error('VidNest does not provide genre filtering')),
+    ]);
+    const sources = results.filter((result) => result.status === 'fulfilled').map((result) => result.value);
+    if (sources.length) {
+      const uniqueItems = new Map();
+      sources.forEach(({ items = [] }) => items.forEach((item) => {
+        const key = `${item.mediaType}:${item.id}`;
+        if (!uniqueItems.has(key)) uniqueItems.set(key, item);
+      }));
+      return {
+        items: [...uniqueItems.values()],
+        page,
+        totalPages: Math.max(1, ...sources.map((result) => result.totalPages || 1)),
+        totalResults: Math.max(0, ...sources.map((result) => result.totalResults || 0)),
+      };
     }
     const local = byType(type);
     const filtered = genre ? local.filter((item) => item.genreIds.includes(Number(genre))) : local;
@@ -58,13 +74,37 @@ export const catalogApi = {
   trailers: async () => CATALOG.filter((i) => i.trailerKey).slice(0, 10),
   details: async (type, id) => {
     if (tmdbEnabled()) { try { return await tmdbDetails(type, id); } catch { /* fall back to local */ } }
+    try {
+      const item = await vidnestDetails(type, id);
+      if (item) return item;
+    } catch { /* fall back to local */ }
     return find(type, id);
   },
   search: async (query, page = 1) => {
     if (!query.trim()) return { items: [], page: 1, totalPages: 1, totalResults: 0 };
-    if (tmdbEnabled()) { try { return await tmdbSearch(query, page); } catch { /* fall back to local */ } }
-    const items = localSearch(query);
-    return { items, page: 1, totalPages: 1, totalResults: items.length };
+    const [tmdbResult, vidnestResult] = await Promise.allSettled([
+      tmdbEnabled() ? tmdbSearch(query, page) : Promise.reject(new Error('TMDB is not enabled')),
+      vidnestSearch(query, page),
+    ]);
+    const results = [tmdbResult, vidnestResult]
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value);
+    if (!results.length) {
+      const items = localSearch(query);
+      return { items, page: 1, totalPages: 1, totalResults: items.length };
+    }
+
+    const uniqueItems = new Map();
+    results.forEach(({ items = [] }) => items.forEach((item) => {
+      const key = `${item.mediaType}:${item.id}`;
+      if (!uniqueItems.has(key)) uniqueItems.set(key, item);
+    }));
+    return {
+      items: [...uniqueItems.values()],
+      page,
+      totalPages: Math.max(1, ...results.map((result) => result.totalPages || 1)),
+      totalResults: Math.max(0, ...results.map((result) => result.totalResults || 0)),
+    };
   },
   related: async (item) =>
     CATALOG.filter((i) => i.id !== item.id)
