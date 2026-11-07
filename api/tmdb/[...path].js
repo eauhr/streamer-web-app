@@ -1,4 +1,4 @@
-const ALLOWED_PATH = /^\/(?:search\/multi|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|(?:movie|tv)\/(?:popular|top_rated|\d+(?:\/(?:watch\/providers|recommendations))?))$/;
+const ALLOWED_PATH = /^\/(?:search\/multi|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|person\/\d+(?:\/combined_credits)?|(?:movie|tv)\/(?:popular|top_rated|\d+(?:\/(?:watch\/providers|recommendations))?))$/;
 
 function getProxyPath(req, requestUrl) {
   const routePath = req.query?.path;

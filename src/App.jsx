@@ -16,6 +16,7 @@ import MyList from '@/pages/MyList';
 import Builder from '@/pages/Builder';
 import Docs from '@/pages/Docs';
 import NotFound from '@/pages/NotFound';
+import Person from '@/pages/Person';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -49,6 +50,7 @@ const AuthenticatedApp = () => {
         <Route path="/tv" element={<Catalog key="tv" type="tv" />} />
         <Route path="/watch/:id" element={<Watch />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/person/:id" element={<Person />} />
         <Route path="/continue" element={<ContinueWatching />} />
         <Route path="/list" element={<MyList />} />
         <Route path="/builder" element={<Builder />} />

@@ -73,6 +73,36 @@ export async function tmdbDetails(type, id) {
   return normalizeMedia(data, type);
 }
 
+export async function tmdbPerson(id) {
+  const [person, credits] = await Promise.all([
+    get(`/person/${id}`, { language: 'en-US' }),
+    get(`/person/${id}/combined_credits`, { language: 'en-US' }),
+  ]);
+  const seen = new Map();
+  [...(credits.cast || []), ...(credits.crew || []).filter((credit) => credit.job === 'Director')].forEach((credit) => {
+    if (credit.media_type !== 'movie' && credit.media_type !== 'tv') return;
+    if (!credit.poster_path) return;
+    if ((credit.genre_ids || []).some((genre) => genre === 10767 || genre === 10763)) return;
+    if (/self|himself|herself/i.test(credit.character || '')) return;
+    const key = `${credit.media_type}:${credit.id}`;
+    if (!seen.has(key)) seen.set(key, credit);
+  });
+  const items = [...seen.values()]
+    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+    .map((credit) => normalizeMedia(credit));
+  return {
+    id: person.id,
+    name: person.name,
+    biography: person.biography || '',
+    birthday: person.birthday,
+    deathday: person.deathday,
+    placeOfBirth: person.place_of_birth,
+    department: person.known_for_department,
+    profilePath: person.profile_path,
+    items,
+  };
+}
+
 export async function tmdbRecommendations(type, id, page = 1) {
   const data = await get(`/${type}/${id}/recommendations`, { page, language: 'en-US' });
   return (data.results || []).map((item) => normalizeMedia(item, type));

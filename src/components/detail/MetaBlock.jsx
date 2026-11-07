@@ -23,10 +23,10 @@ export default function MetaBlock({ item }) {
       {item.cast?.length > 0 && (
         <p className="text-sm leading-relaxed text-[#A1A1AA]">
           <span className="text-white">Cast: </span>
-          {item.cast.map((name, i) => (
-            <React.Fragment key={name}>
-              <Link to={`/search?q=${encodeURIComponent(name)}`} className="underline decoration-white/30 underline-offset-4 hover:text-white hover:decoration-white">{name}</Link>
-              {i < item.cast.length - 1 && ', '}
+          {(item.castDetails?.length ? item.castDetails : item.cast.map((name) => ({ name }))).map((person, i, cast) => (
+            <React.Fragment key={person.id || person.name}>
+              <Link to={person.id ? `/person/${person.id}` : `/search?q=${encodeURIComponent(person.name)}`} className="underline decoration-white/30 underline-offset-4 hover:text-white hover:decoration-white">{person.name}</Link>
+              {i < cast.length - 1 && ', '}
             </React.Fragment>
           ))}
         </p>

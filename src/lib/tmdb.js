@@ -18,7 +18,12 @@ export const detailsHref = (item) => `/watch/${item.id}?type=${item.mediaType}`;
 export const formatRating = (v) => (v ? Number(v).toFixed(1) : '—');
 
 export const normalizeCast = (credits) =>
-  (credits?.cast || []).slice(0, 12).map((c) => ({ id: c.id, name: c.name, character: c.character }));
+  (credits?.cast || []).slice(0, 12).map((c) => ({
+    id: c.id,
+    name: c.name,
+    character: c.character,
+    profilePath: c.profile_path ?? null,
+  }));
 
 // Priority: official YouTube trailer → YouTube teaser → official featurette → none.
 export function selectTrailer(videos = []) {
@@ -46,6 +51,7 @@ export function normalizeMedia(raw, fallbackType = 'movie') {
     voteAverage: raw.vote_average,
     genreIds: raw.genre_ids || (raw.genres || []).map((g) => g.id),
     cast: normalizeCast(raw.credits).map((c) => c.name),
+    castDetails: normalizeCast(raw.credits),
     trailerKey: selectTrailer(raw.videos?.results)?.key || null,
     runtime: raw.runtime,
     seasons: raw.seasons?.filter((s) => s.season_number > 0).map((s) => s.episode_count),

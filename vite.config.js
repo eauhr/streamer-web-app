@@ -26,7 +26,7 @@ function tmdbProxyPlugin({ token, apiKey }) {
 
     const requestedPath = requestUrl.searchParams.get('path') || requestUrl.pathname.slice('/api/tmdb'.length);
     const path = requestedPath.startsWith('/') ? requestedPath : `/${requestedPath}`;
-    const allowed = /^\/(?:search\/multi|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|(?:movie|tv)\/(?:popular|top_rated|\d+(?:\/(?:watch\/providers|recommendations))?))$/;
+    const allowed = /^\/(?:search\/multi|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|person\/\d+(?:\/combined_credits)?|(?:movie|tv)\/(?:popular|top_rated|\d+(?:\/(?:watch\/providers|recommendations))?))$/;
     if (!allowed.test(path)) {
       res.statusCode = 404;
       res.end('TMDB endpoint not allowed');

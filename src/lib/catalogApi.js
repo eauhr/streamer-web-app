@@ -1,6 +1,6 @@
 import { CATALOG, HERO_IDS } from '@/lib/catalog';
 import { genreNames } from '@/lib/tmdb';
-import { tmdbEnabled, tmdbSearch, tmdbDetails, tmdbTrending, tmdbBrowse, tmdbGenres, tmdbProviderRegions, tmdbWatchProviders, tmdbRecommendations } from '@/lib/tmdbClient';
+import { tmdbEnabled, tmdbSearch, tmdbDetails, tmdbPerson, tmdbTrending, tmdbBrowse, tmdbGenres, tmdbProviderRegions, tmdbWatchProviders, tmdbRecommendations } from '@/lib/tmdbClient';
 import { vidnestDetails, vidnestSearch } from '@/lib/vidnestCatalog';
 
 // TMDB supplies the main catalog; VidNest adds titles it can play to search.
@@ -78,6 +78,10 @@ export const catalogApi = {
     } catch { /* fall back to local */ }
     return find(type, id);
   },
+  person: async (id) => {
+    if (!tmdbEnabled()) return null;
+    try { return await tmdbPerson(id); } catch { return null; }
+  },
   search: async (query, page = 1) => {
     if (!query.trim()) return { items: [], page: 1, totalPages: 1, totalResults: 0 };
     const [tmdbResult, vidnestResult] = await Promise.allSettled([
@@ -123,6 +127,7 @@ export const catalogApi = {
         backdropPath: item.backdropPath || previous.backdropPath,
         genreIds: item.genreIds?.length ? item.genreIds : previous.genreIds,
         cast: item.cast?.length ? item.cast : previous.cast,
+        castDetails: item.castDetails?.length ? item.castDetails : previous.castDetails,
         creators: item.creators?.length ? item.creators : previous.creators,
         seasons: item.seasons?.length ? item.seasons : previous.seasons,
       });
