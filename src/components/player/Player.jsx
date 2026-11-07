@@ -64,6 +64,12 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
         allowFullScreen
         referrerPolicy="origin"
         onLoad={() => {
+          if (provider.id === 'vidrift' && startAt > 0) {
+            iframeRef.current?.contentWindow?.postMessage(
+              { type: 'vidrift:resume', currentTime: startAt },
+              provider.origin
+            );
+          }
         }}
         className="absolute inset-0 h-full w-full"
       />
