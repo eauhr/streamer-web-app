@@ -17,8 +17,14 @@ async function get(path, params = {}) {
 }
 
 export async function tmdbSearch(query, page = 1) {
-  const data = await get('/search/multi', { query, include_adult: 'false', language: 'en-US', page });
-  const items = (data.results || []).flatMap((result) => {
+  const [multiResult, tvResult] = await Promise.allSettled([
+    get('/search/multi', { query, include_adult: 'false', language: 'en-US', page }),
+    get('/search/tv', { query, include_adult: 'false', language: 'en-US', page }),
+  ]);
+  if (multiResult.status === 'rejected' && tvResult.status === 'rejected') throw multiResult.reason;
+  const multi = multiResult.status === 'fulfilled' ? multiResult.value : { results: [] };
+  const tv = tvResult.status === 'fulfilled' ? tvResult.value : { results: [] };
+  const items = (multi.results || []).flatMap((result) => {
     if (result.media_type === 'movie' || result.media_type === 'tv') {
       return [normalizeMedia(result)];
     }
@@ -29,16 +35,23 @@ export async function tmdbSearch(query, page = 1) {
     }
     return [];
   });
+  (tv.results || []).forEach((result) => items.push(normalizeMedia(result, 'tv')));
   const uniqueItems = new Map();
   items.forEach((item) => uniqueItems.set(`${item.mediaType}:${item.id}`, item));
   const results = [...uniqueItems.values()];
-  return { items: results, page: data.page || page, totalPages: data.total_pages || 1, totalResults: data.total_results || results.length };
+  return {
+    items: results,
+    page: multi.page || tv.page || page,
+    totalPages: Math.max(multi.total_pages || 1, tv.total_pages || 1),
+    totalResults: Math.max(multi.total_results || 0, tv.total_results || 0, results.length),
+  };
 }
 
-export async function tmdbBrowse(type, { page = 1, genre = null, sortBy = 'popularity.desc' } = {}) {
+export async function tmdbBrowse(type, { page = 1, genre = null, sortBy = 'popularity.desc', originalLanguage = null } = {}) {
   const data = await get(`/discover/${type}`, {
     page,
     with_genres: genre,
+    with_original_language: originalLanguage,
     sort_by: sortBy,
     'vote_count.gte': sortBy === 'vote_average.desc' ? 1000 : undefined,
     include_adult: 'false',
@@ -51,6 +64,13 @@ export async function tmdbBrowse(type, { page = 1, genre = null, sortBy = 'popul
     totalPages: Math.min(data.total_pages || 1, 500),
     totalResults: data.total_results || items.length,
   };
+}
+
+export async function tmdbLanguages() {
+  const data = await get('/configuration/languages');
+  return (data || [])
+    .filter((language) => language.iso_639_1 && language.english_name)
+    .sort((a, b) => a.english_name.localeCompare(b.english_name));
 }
 
 export async function tmdbGenres(type) {

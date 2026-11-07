@@ -1,6 +1,6 @@
 import { CATALOG, HERO_IDS } from '@/lib/catalog';
 import { genreNames } from '@/lib/tmdb';
-import { tmdbEnabled, tmdbSearch, tmdbDetails, tmdbPerson, tmdbTrending, tmdbBrowse, tmdbGenres, tmdbProviderRegions, tmdbWatchProviders, tmdbRecommendations } from '@/lib/tmdbClient';
+import { tmdbEnabled, tmdbSearch, tmdbDetails, tmdbPerson, tmdbTrending, tmdbBrowse, tmdbGenres, tmdbLanguages, tmdbProviderRegions, tmdbWatchProviders, tmdbRecommendations } from '@/lib/tmdbClient';
 import { vidnestDetails, vidnestSearch } from '@/lib/vidnestCatalog';
 
 // TMDB supplies the main catalog; VidNest adds titles it can play to search.
@@ -34,8 +34,8 @@ export const catalogApi = {
     if (tmdbEnabled()) { try { return (await tmdbBrowse(type, { sortBy: 'vote_average.desc' })).items; } catch { /* fall back to local */ } }
     return [...byType(type)].sort((a, b) => b.voteAverage - a.voteAverage);
   },
-  browse: async (type, page = 1, genre = null) => {
-    if (tmdbEnabled()) { try { return await tmdbBrowse(type, { page, genre }); } catch { /* fall back to local */ } }
+  browse: async (type, page = 1, genre = null, originalLanguage = null) => {
+    if (tmdbEnabled()) { try { return await tmdbBrowse(type, { page, genre, originalLanguage }); } catch { /* fall back to local */ } }
     const local = byType(type);
     const filtered = genre ? local.filter((item) => item.genreIds.includes(Number(genre))) : local;
     const pageSize = 24;
@@ -48,6 +48,10 @@ export const catalogApi = {
     return [...new Set(byType(type).flatMap((item) => item.genreIds))]
       .map((id) => ({ id, name: genreNames([id])[0] }))
       .filter((genre) => genre.name);
+  },
+  languages: async () => {
+    if (!tmdbEnabled()) return [];
+    try { return await tmdbLanguages(); } catch { return []; }
   },
   providerRegions: async () => {
     if (!tmdbEnabled()) return [];

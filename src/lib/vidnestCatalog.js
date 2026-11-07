@@ -1,7 +1,7 @@
 const BASE = 'https://vidnest.pro/api/discover';
 
 function normalizeEntry(entry, fallbackType) {
-  const mediaType = entry.type === 'tv' ? 'tv' : fallbackType;
+  const mediaType = entry.type === 'tv' || entry.type === 'movie' ? entry.type : fallbackType;
   const id = entry.tmdbid || entry.tmdb_id || entry.imdb_id;
   if (!id) return null;
 
@@ -49,20 +49,22 @@ export async function vidnestSearch(query, page = 1) {
     request('tv', { query: q, page, resultsPerPage: 20 }),
   ]);
 
-  const responses = [moviesResult, tvResult]
-    .filter((result) => result.status === 'fulfilled')
-    .map((result) => result.value);
+  const responses = [
+    { result: moviesResult, type: 'movie' },
+    { result: tvResult, type: 'tv' },
+  ].filter(({ result }) => result.status === 'fulfilled')
+    .map(({ result, type }) => ({ data: result.value, type }));
   if (!responses.length) throw new Error('VidNest catalog search failed');
 
-  const items = responses.flatMap((data) => (data.data || [])
-    .map((entry) => normalizeEntry(entry, entry.type === 'tv' ? 'tv' : 'movie'))
+  const items = responses.flatMap(({ data, type }) => (data.data || [])
+    .map((entry) => normalizeEntry(entry, type))
     .filter(Boolean));
 
   return {
     items,
     page,
-    totalPages: Math.max(1, ...responses.map((data) => Number(data.last_page) || 1)),
-    totalResults: Math.max(0, ...responses.map((data) => Number(data.total_count ?? data.total) || 0)),
+    totalPages: Math.max(1, ...responses.map(({ data }) => Number(data.last_page) || 1)),
+    totalResults: Math.max(0, ...responses.map(({ data }) => Number(data.total_count ?? data.total) || 0)),
   };
 }
 

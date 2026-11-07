@@ -55,6 +55,11 @@ export function normalizeMedia(raw, fallbackType = 'movie') {
     trailerKey: selectTrailer(raw.videos?.results)?.key || null,
     runtime: raw.runtime,
     seasons: raw.seasons?.filter((s) => s.season_number > 0).map((s) => s.episode_count),
+    seasonDetails: raw.seasons?.filter((s) => s.season_number > 0).map((s) => ({
+      number: s.season_number,
+      name: s.name || `Season ${s.season_number}`,
+      episodeCount: s.episode_count || 0,
+    })),
   };
 }
 

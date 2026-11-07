@@ -1,14 +1,18 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function EpisodePicker({ seasons = [], season, episode, onChange }) {
-  const count = seasons[season - 1] || 1;
+export default function EpisodePicker({ seasons = [], seasonDetails = [], season, episode, onChange }) {
+  const options = seasonDetails.length
+    ? seasonDetails
+    : seasons.map((episodeCount, index) => ({ number: index + 1, name: `Season ${index + 1}`, episodeCount }));
+  const selectedSeason = options.find((option) => option.number === season);
+  const count = selectedSeason?.episodeCount || 1;
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Select value={String(season)} onValueChange={(v) => onChange(Number(v), 1)}>
         <SelectTrigger aria-label="Season" className="h-10 w-36 rounded-full border-white/10 bg-[#151515]"><SelectValue /></SelectTrigger>
         <SelectContent className="border-white/10 bg-[#151515]">
-          {seasons.map((_, i) => <SelectItem key={i} value={String(i + 1)}>Season {i + 1}</SelectItem>)}
+          {options.map((option) => <SelectItem key={option.number} value={String(option.number)}>{option.name}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={String(episode)} onValueChange={(v) => onChange(season, Number(v))}>

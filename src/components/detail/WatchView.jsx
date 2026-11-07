@@ -24,10 +24,15 @@ export default function WatchView({ item, autoPlay }) {
   }, [playing]);
 
   const choose = (s, e) => { setSeason(s); setEpisode(e); setStartAt(0); setPlaying(true); };
+  const seasonOptions = item.seasonDetails?.length
+    ? item.seasonDetails
+    : (item.seasons || []).map((episodeCount, index) => ({ number: index + 1, episodeCount }));
+  const currentSeasonIndex = seasonOptions.findIndex((option) => option.number === season);
+  const currentSeason = seasonOptions[currentSeasonIndex];
   const next = () => {
     if (!isTv) return;
-    if (episode < (item.seasons[season - 1] || 0)) choose(season, episode + 1);
-    else if (season < item.seasons.length) choose(season + 1, 1);
+    if (episode < (currentSeason?.episodeCount || 0)) choose(season, episode + 1);
+    else if (currentSeasonIndex >= 0 && seasonOptions[currentSeasonIndex + 1]) choose(seasonOptions[currentSeasonIndex + 1].number, 1);
   };
 
   const resumeNote = resume && resume.watchedSeconds > 30
@@ -43,7 +48,7 @@ export default function WatchView({ item, autoPlay }) {
           <section ref={playerRef} aria-label="Player" className="mb-10 space-y-4">
             <Player item={item} season={season} episode={episode} startAt={startAt} autoplay onEnded={next} />
             <ProviderSwitcher />
-            {isTv && <EpisodePicker seasons={item.seasons} season={season} episode={episode} onChange={choose} />}
+            {isTv && <EpisodePicker seasons={item.seasons} seasonDetails={item.seasonDetails} season={season} episode={episode} onChange={choose} />}
           </section>
         )}
         <MetaBlock item={item} />
