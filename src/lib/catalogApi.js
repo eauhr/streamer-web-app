@@ -17,6 +17,28 @@ const localSearch = (query) => {
   );
 };
 
+const searchText = (value = '') => String(value)
+  .normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^\p{L}\p{N}]+/gu, ' ')
+  .trim();
+
+const titleMatchRank = (item, query) => {
+  const q = searchText(query);
+  const titles = [item.title, item.originalTitle].map(searchText).filter(Boolean);
+  if (titles.some((title) => title === q)) return 0;
+  if (titles.some((title) => title.startsWith(q))) return 1;
+  if (titles.some((title) => title.includes(q))) return 2;
+  return 3;
+};
+
+const rankSearchItems = (items, query) => [...items].sort((a, b) =>
+  titleMatchRank(a, query) - titleMatchRank(b, query) ||
+  (b.popularity || 0) - (a.popularity || 0) ||
+  (b.voteAverage || 0) - (a.voteAverage || 0)
+);
+
 export const catalogApi = {
   hero: async () => {
     if (tmdbEnabled()) { try { return (await tmdbTrending()).slice(0, 5); } catch { /* fall back to local */ } }
@@ -102,10 +124,24 @@ export const catalogApi = {
 
     const tmdbItems = tmdbResult.status === 'fulfilled' ? tmdbResult.value.items : [];
     const vidnestItems = vidnestResult.status === 'fulfilled' ? vidnestResult.value.items : [];
+    const uniqueItems = new Map();
+    [...vidnestItems, ...tmdbItems].forEach((item) => {
+      const key = `${item.mediaType}:${item.id}`;
+      const previous = uniqueItems.get(key);
+      uniqueItems.set(key, previous ? {
+        ...previous,
+        ...item,
+        posterPath: item.posterPath || previous.posterPath,
+        backdropPath: item.backdropPath || previous.backdropPath,
+        overview: item.overview || previous.overview,
+        originalTitle: item.originalTitle || previous.originalTitle,
+      } : item);
+    });
+    const rankedItems = rankSearchItems([...uniqueItems.values()], query);
     const itemsToEnrich = tmdbEnabled()
-      ? [...new Map([...tmdbItems, ...vidnestItems]
+      ? rankedItems
         .filter((item) => /^\d+$/.test(String(item.id)) && (!item.posterPath || !item.overview))
-        .map((item) => [`${item.mediaType}:${item.id}`, item])).values()].slice(0, 8)
+        .slice(0, 16)
       : [];
     const enrichedResults = await Promise.allSettled(
       itemsToEnrich.map((item) => tmdbDetails(item.mediaType, item.id))
@@ -114,15 +150,15 @@ export const catalogApi = {
       .filter((result) => result.status === 'fulfilled' && result.value)
       .map((result) => result.value);
 
-    const uniqueItems = new Map();
-    [...vidnestItems, ...tmdbItems, ...enrichedItems].forEach((item) => {
+    const enrichedItemsByKey = new Map();
+    [...rankedItems, ...enrichedItems].forEach((item) => {
       const key = `${item.mediaType}:${item.id}`;
-      const previous = uniqueItems.get(key);
+      const previous = enrichedItemsByKey.get(key);
       if (!previous) {
-        uniqueItems.set(key, item);
+        enrichedItemsByKey.set(key, item);
         return;
       }
-      uniqueItems.set(key, {
+      enrichedItemsByKey.set(key, {
         ...previous,
         ...item,
         title: item.title || previous.title,
@@ -134,10 +170,11 @@ export const catalogApi = {
         castDetails: item.castDetails?.length ? item.castDetails : previous.castDetails,
         creators: item.creators?.length ? item.creators : previous.creators,
         seasons: item.seasons?.length ? item.seasons : previous.seasons,
+        seasonDetails: item.seasonDetails?.length ? item.seasonDetails : previous.seasonDetails,
       });
     });
     return {
-      items: [...uniqueItems.values()],
+      items: rankSearchItems([...enrichedItemsByKey.values()], query),
       page,
       totalPages: Math.max(1, ...results.map((result) => result.totalPages || 1)),
       totalResults: Math.max(0, ...results.map((result) => result.totalResults || 0)),

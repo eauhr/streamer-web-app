@@ -8,8 +8,15 @@ export const GENRES = {
   10765: 'Sci-Fi & Fantasy', 10768: 'War & Politics',
 };
 
-export const posterUrl = (path, size = 'w500') => (path ? `${IMG}/${size}${path}` : null);
-export const backdropUrl = (path, size = 'w1280') => (path ? `${IMG}/${size}${path}` : null);
+const imageUrl = (path, size) => {
+  if (!path) return null;
+  const value = String(path).trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value.replace(/^http:/i, 'https:');
+  return `${IMG}/${size}${value.startsWith('/') ? value : `/${value}`}`;
+};
+export const posterUrl = (path, size = 'w500') => imageUrl(path, size);
+export const backdropUrl = (path, size = 'w1280') => imageUrl(path, size);
 export const releaseYear = (item) => (item?.releaseDate || item?.firstAirDate || '').slice(0, 4);
 export const titleOf = (raw) => raw?.title || raw?.name || 'Untitled';
 export const genreNames = (ids = []) => ids.map((id) => GENRES[id]).filter(Boolean);
@@ -44,11 +51,13 @@ export function normalizeMedia(raw, fallbackType = 'movie') {
     id: raw.id,
     mediaType,
     title: titleOf(raw),
+    originalTitle: raw.original_title || raw.original_name || '',
     overview: raw.overview || '',
     posterPath: raw.poster_path ?? null,
     backdropPath: raw.backdrop_path ?? null,
     releaseDate: raw.release_date || raw.first_air_date || '',
     voteAverage: raw.vote_average,
+    popularity: raw.popularity || 0,
     genreIds: raw.genre_ids || (raw.genres || []).map((g) => g.id),
     cast: normalizeCast(raw.credits).map((c) => c.name),
     castDetails: normalizeCast(raw.credits),

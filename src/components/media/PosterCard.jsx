@@ -8,7 +8,7 @@ export default function PosterCard({ item, className = '', showMeta = false }) {
   return (
     <Link to={detailsHref(item)} className={`group block snap-start rounded-xl ${className}`} aria-label={`${item.title}, ${typeLabel(item)}, ${releaseYear(item)}`}>
       <div className="relative aspect-[2/3] overflow-hidden rounded-[10px] bg-[#151515]">
-        <Artwork src={posterUrl(item.posterPath, 'w342')} alt={`${item.title} poster`} title={item.title} className="h-full w-full transition duration-200 group-hover:scale-[1.03]" />
+        <Artwork src={posterUrl(item.posterPath, 'w342') || posterUrl(item.backdropPath, 'w780')} alt={`${item.title} poster`} title={item.title} className="h-full w-full transition duration-200 group-hover:scale-[1.03]" />
         <div className="absolute inset-0 rounded-[10px] ring-1 ring-inset ring-white/5 transition duration-200 group-hover:ring-white/30 group-focus-visible:ring-teev-lime" />
       </div>
       {showMeta && (
