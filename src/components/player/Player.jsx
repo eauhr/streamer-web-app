@@ -59,16 +59,11 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
         ref={iframeRef}
         src={src}
         title={`${item.title}${isTv ? ` season ${season} episode ${episode}` : ''} player`}
+        sandbox={provider.sandbox}
         allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
         allowFullScreen
         referrerPolicy="origin"
         onLoad={() => {
-          if (provider.id === 'vidrift' && startAt > 0) {
-            iframeRef.current?.contentWindow?.postMessage(
-              { type: 'vidrift:resume', currentTime: startAt },
-              provider.origin
-            );
-          }
         }}
         className="absolute inset-0 h-full w-full"
       />

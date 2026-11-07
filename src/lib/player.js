@@ -5,6 +5,8 @@ export const PLAYER_PROVIDERS = {
     name: 'Peachify',
     origin: 'https://peachify.top',
     originMatch: 'peachify',
+    // Keeps this cross-origin player from opening popups or navigating TeeV away.
+    sandbox: 'allow-scripts allow-same-origin allow-forms allow-presentation',
     supports: ['movie', 'tv'],
     buildUrl({ type, id, season = 1, episode = 1, startAt = 0, autoplay = true, color }) {
       const path = type === 'tv' ? `/embed/tv/${id}/${season}/${episode}` : `/embed/movie/${id}`;
@@ -21,29 +23,16 @@ export const PLAYER_PROVIDERS = {
     name: 'VidNest',
     origin: 'https://vidnest.pro',
     originMatch: 'vidnest',
+    sandbox: 'allow-scripts allow-same-origin allow-forms allow-presentation',
     supports: ['movie', 'tv'],
     buildUrl({ type, id, season = 1, episode = 1, startAt = 0, autoplay = true }) {
       const path = type === 'tv' ? `/tv/${id}/${season}/${episode}` : `/movie/${id}`;
       const params = new URLSearchParams();
       if (autoplay) params.set('autoplay', '1');
       if (startAt > 0) params.set('t', String(Math.floor(startAt)));
+      if (type === 'tv') params.set('episodes', '1');
       const qs = params.toString();
       return `${this.origin}${path}${qs ? `?${qs}` : ''}`;
-    },
-  },
-  vidrift: {
-    id: 'vidrift',
-    name: 'VidRift',
-    origin: 'https://embed.vidrift.net',
-    supports: ['movie', 'tv'],
-    buildUrl({ type, id, season = 1, episode = 1, autoplay = true }) {
-      const path = type === 'tv'
-        ? `/embed/tv/${id}/${season}/${episode}`
-        : `/embed/movie/${id}`;
-      const params = new URLSearchParams();
-      if (!autoplay) params.set('autoplay', '0');
-      const query = params.toString();
-      return `${this.origin}${path}${query ? `?${query}` : ''}`;
     },
   },
   vidcore: {
@@ -51,6 +40,7 @@ export const PLAYER_PROVIDERS = {
     name: 'VidCore',
     origin: 'https://vidcore.io',
     originMatch: 'vidcore',
+    sandbox: 'allow-scripts allow-same-origin allow-forms allow-presentation',
     supports: ['movie', 'tv'],
     buildUrl({ type, id, season = 1, episode = 1, startAt = 0, autoplay = true, color }) {
       const path = type === 'tv' ? `/tv/${id}/${season}/${episode}` : `/movie/${id}`;
@@ -67,6 +57,7 @@ export const PLAYER_PROVIDERS = {
     name: 'Embos',
     origin: 'https://embos.top',
     originMatch: 'embos',
+    sandbox: 'allow-scripts allow-same-origin allow-forms allow-presentation',
     supports: ['movie', 'tv'],
     buildUrl({ type, id, season = 1, episode = 1, startAt = 0, autoplay = true }) {
       const path = type === 'tv' ? '/tv/' : '/movie/';
@@ -83,6 +74,7 @@ export const PLAYER_PROVIDERS = {
     name: 'VidLink',
     origin: 'https://vidlink.pro',
     originMatch: 'vidlink',
+    sandbox: 'allow-scripts allow-same-origin allow-forms allow-presentation',
     supports: ['movie', 'tv'],
     buildUrl({ type, id, season = 1, episode = 1, startAt = 0, autoplay = true, color }) {
       const path = type === 'tv' ? `/tv/${id}/${season}/${episode}` : `/movie/${id}`;
@@ -100,7 +92,7 @@ export const PLAYER_PROVIDERS = {
   },
 };
 
-export const PROVIDER_ORDER = ['peachify', 'vidnest', 'vidrift', 'vidcore', 'embos', 'vidlink'];
+export const PROVIDER_ORDER = ['peachify', 'vidnest', 'vidcore', 'embos', 'vidlink'];
 export const DEFAULT_PROVIDER = 'peachify';
 export const getProvider = (id) => PLAYER_PROVIDERS[id] || PLAYER_PROVIDERS[DEFAULT_PROVIDER];
 

@@ -4,7 +4,8 @@ import { PROVIDER_ORDER, getProvider } from '@/lib/player';
 import { providerStore } from '@/lib/storage';
 
 export default function ProviderSwitcher({ className = '' }) {
-  const active = useStore(() => providerStore.get(), []);
+  const storedProvider = useStore(() => providerStore.get(), []);
+  const active = getProvider(storedProvider).id;
   return (
     <div role="group" aria-label="Streaming source" className={`flex flex-wrap items-center gap-2 ${className}`}>
       <span className="text-xs text-[#A1A1AA]">Source:</span>
