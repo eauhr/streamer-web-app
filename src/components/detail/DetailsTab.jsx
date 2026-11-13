@@ -12,6 +12,7 @@ const Row = ({ k, v }) => <p><span className="text-[#666]">{k}: </span><span cla
 
 export default function DetailsTab({ item }) {
   const isTv = item.mediaType === 'tv';
+  const seasons = item.seasons || [];
   const audio = [...new Set([item.language || 'English', 'English', 'Spanish'])];
   return (
     <div className="grid gap-4 pt-8 md:grid-cols-2">
@@ -19,7 +20,7 @@ export default function DetailsTab({ item }) {
         <Row k="Title" v={item.title} />
         <Row k="Type" v={isTv ? 'Series' : 'Movie'} />
         <Row k="Released" v={releaseYear(item)} />
-        <Row k={isTv ? 'Seasons' : 'Runtime'} v={isTv ? `${item.seasons.length} (${item.seasons.reduce((a, b) => a + b, 0)} episodes)` : `${item.runtime} min`} />
+        <Row k={isTv ? 'Seasons' : 'Runtime'} v={isTv ? (seasons.length ? `${seasons.length} (${seasons.reduce((a, b) => a + b, 0)} episodes)` : 'Unavailable') : `${item.runtime} min`} />
         <Row k="Genres" v={genreNames(item.genreIds).join(', ')} />
       </Card>
       <Card title="Creators and cast">

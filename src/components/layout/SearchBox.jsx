@@ -9,7 +9,7 @@ export default function SearchBox({ className = '', autoFocus = false, large = f
   const initial = location.pathname === '/search' ? new URLSearchParams(location.search).get('q') || '' : '';
   const [value, setValue] = useState(initial);
   const touched = useRef(false);
-  const debounced = useDebounce(value, 320);
+  const debounced = useDebounce(value, 400);
 
   useEffect(() => {
     if (location.pathname !== '/search') { setValue(''); touched.current = false; }

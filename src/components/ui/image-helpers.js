@@ -1,5 +1,4 @@
-const WIX_MEDIA_HOSTS = {
-  "media.base44.com": "/images/public/",
+const OPTIMIZABLE_MEDIA_HOSTS = {
   "static.wixstatic.com": "/media/",
 }
 
@@ -26,7 +25,7 @@ export function parseWixMediaUrl(src) {
       return null
     }
 
-    const pathPrefix = WIX_MEDIA_HOSTS[url.hostname]
+    const pathPrefix = OPTIMIZABLE_MEDIA_HOSTS[url.hostname]
     if (!pathPrefix) return null
 
     const transformed = url.pathname.match(/^(.*)\/v1\/(?:fill|fit)\/[^/]+\/[^/]+$/i)

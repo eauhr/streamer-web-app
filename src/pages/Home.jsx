@@ -11,13 +11,19 @@ import TrailerCard from '@/components/media/TrailerCard';
 const useRow = (key, fn) => useQuery({ queryKey: key, queryFn: fn });
 
 export default function Home() {
-  const hero = useRow(['hero'], catalogApi.hero);
   const trending = useRow(['trending'], catalogApi.trending);
+  const heroItems = (trending.data || []).slice(0, 5);
   const popMovies = useRow(['popular', 'movie'], () => catalogApi.popular('movie'));
   const popTv = useRow(['popular', 'tv'], () => catalogApi.popular('tv'));
   const topMovies = useRow(['top', 'movie'], () => catalogApi.topRated('movie'));
   const topTv = useRow(['top', 'tv'], () => catalogApi.topRated('tv'));
-  const trailers = useRow(['trailers'], catalogApi.trailers);
+  const trailerSourceKey = (trending.data || []).slice(0, 8)
+    .map((item) => `${item.mediaType}:${item.id}`).join(',');
+  const trailers = useQuery({
+    queryKey: ['trailers', trailerSourceKey],
+    queryFn: () => catalogApi.trailers(trending.data || []),
+    enabled: trending.isSuccess,
+  });
   const alsoWatched = (trending.data || []).slice().reverse();
 
   const posters = (q) => (q.data || []).map((i) => <PosterCard key={`${i.mediaType}-${i.id}`} item={i} className={POSTER_W} />);
@@ -25,7 +31,7 @@ export default function Home() {
 
   return (
     <div className="pb-8">
-      <Hero items={hero.data} />
+      <Hero items={heroItems} />
       <div className="relative z-10 -mt-4 space-y-12 sm:space-y-14">
         <ContinueRow />
         <Shelf title="Trending today" loading={trending.isLoading}>{posters(trending)}</Shelf>

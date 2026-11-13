@@ -1,4 +1,4 @@
-import { CATALOG, HERO_IDS } from '@/lib/catalog';
+import { CATALOG } from '@/lib/catalog';
 import { genreNames } from '@/lib/tmdb';
 import { tmdbEnabled, tmdbSearch, tmdbDetails, tmdbPerson, tmdbTrending, tmdbBrowse, tmdbGenres, tmdbLanguages, tmdbProviderRegions, tmdbWatchProviders, tmdbRecommendations } from '@/lib/tmdbClient';
 import { vidnestDetails, vidnestSearch } from '@/lib/vidnestCatalog';
@@ -40,13 +40,11 @@ const rankSearchItems = (items, query) => [...items].sort((a, b) =>
 );
 
 export const catalogApi = {
-  hero: async () => {
-    if (tmdbEnabled()) { try { return (await tmdbTrending()).slice(0, 5); } catch { /* fall back to local */ } }
-    return HERO_IDS.map((id) => CATALOG.find((i) => i.id === id)).filter(Boolean);
-  },
   trending: async () => {
-    if (tmdbEnabled()) { try { return await tmdbTrending(); } catch { /* fall back to local */ } }
-    return CATALOG.slice(0, 14);
+    if (tmdbEnabled()) {
+      try { return (await tmdbTrending()).map((item) => ({ ...item, catalogSource: 'tmdb' })); } catch { /* fall back to local */ }
+    }
+    return CATALOG.slice(0, 14).map((item) => ({ ...item, catalogSource: 'local' }));
   },
   popular: async (type) => {
     if (tmdbEnabled()) { try { return (await tmdbBrowse(type)).items; } catch { /* fall back to local */ } }
@@ -83,11 +81,11 @@ export const catalogApi = {
     if (!tmdbEnabled()) return {};
     try { return await tmdbWatchProviders(type, id); } catch { return {}; }
   },
-  trailers: async () => {
+  trailers: async (trending = []) => {
     if (tmdbEnabled()) {
       try {
-        const trending = await tmdbTrending();
-        const details = await Promise.allSettled(trending.slice(0, 12).map((item) => tmdbDetails(item.mediaType, item.id)));
+        const tmdbTrendingItems = trending.filter((item) => item.catalogSource === 'tmdb');
+        const details = await Promise.allSettled(tmdbTrendingItems.slice(0, 8).map((item) => tmdbDetails(item.mediaType, item.id)));
         const withTrailers = details
           .filter((result) => result.status === 'fulfilled' && result.value?.trailerKey)
           .map((result) => result.value);
@@ -109,7 +107,7 @@ export const catalogApi = {
     try { return await tmdbPerson(id); } catch { return null; }
   },
   search: async (query, page = 1) => {
-    if (!query.trim()) return { items: [], page: 1, totalPages: 1, totalResults: 0 };
+    if (query.trim().length < 2) return { items: [], page: 1, totalPages: 1, totalResults: 0 };
     const [tmdbResult, vidnestResult] = await Promise.allSettled([
       tmdbEnabled() ? tmdbSearch(query, page) : Promise.reject(new Error('TMDB is not enabled')),
       vidnestSearch(query, page),
@@ -141,7 +139,7 @@ export const catalogApi = {
     const itemsToEnrich = tmdbEnabled()
       ? rankedItems
         .filter((item) => /^\d+$/.test(String(item.id)) && (!item.posterPath || !item.overview))
-        .slice(0, 16)
+        .slice(0, 8)
       : [];
     const enrichedResults = await Promise.allSettled(
       itemsToEnrich.map((item) => tmdbDetails(item.mediaType, item.id))

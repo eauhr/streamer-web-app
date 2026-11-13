@@ -1,4 +1,4 @@
-// Local persistence for the first release. Only metadata and playback positions are stored.
+// Local persistence. Only metadata and playback positions are stored.
 export const STORAGE_EVENT = 'teev-storage';
 const KEYS = { continue: 'teev_continue_watching', list: 'teev_watchlist', reactions: 'teev_reactions', provider: 'teev_provider' };
 
@@ -6,13 +6,21 @@ function read(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
 }
 function write(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    return false;
+  }
   window.dispatchEvent(new CustomEvent(STORAGE_EVENT, { detail: key }));
+  return true;
 }
+const safeStorageRead = (storage, key) => {
+  try { return window[storage].getItem(key); } catch { return null; }
+};
 const same = (a, type, id) => a.type === type && String(a.id) === String(id);
 
 export const continueStore = {
-  all: () => read(KEYS.continue, []).sort((a, b) => b.updatedAt - a.updatedAt),
+  all: () => [...read(KEYS.continue, [])].sort((a, b) => b.updatedAt - a.updatedAt),
   get: (type, id) => read(KEYS.continue, []).find((i) => same(i, type, id)) || null,
   save(item) {
     const rest = read(KEYS.continue, []).filter((i) => !same(i, item.type, item.id));
@@ -39,10 +47,10 @@ export const listStore = {
       voteAverage: item.voteAverage || 0,
       genreIds: item.genreIds || [],
     };
-    write(KEYS.list, exists
+    const saved = write(KEYS.list, exists
       ? list.filter((i) => !same(i, item.mediaType, item.id))
       : [{ id: String(item.id), type: item.mediaType, addedAt: Date.now(), item: snapshot }, ...list]);
-    return !exists;
+    return saved ? !exists : exists;
   },
 };
 
@@ -59,9 +67,10 @@ export const providerStore = {
   // Keep the selected source in this browser tab only. A localStorage value is
   // read as a one-time migration/default for existing users, but new changes
   // must not propagate to other open tabs.
-  get: () => sessionStorage.getItem(KEYS.provider) || localStorage.getItem(KEYS.provider) || 'peachify',
+  get: () => safeStorageRead('sessionStorage', KEYS.provider) || safeStorageRead('localStorage', KEYS.provider) || 'peachify',
   set: (id) => {
-    sessionStorage.setItem(KEYS.provider, id);
+    try { window.sessionStorage.setItem(KEYS.provider, id); } catch { return false; }
     window.dispatchEvent(new CustomEvent(STORAGE_EVENT, { detail: KEYS.provider }));
+    return true;
   },
 };

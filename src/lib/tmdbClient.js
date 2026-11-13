@@ -3,7 +3,7 @@ import { normalizeMedia } from '@/lib/tmdb';
 const BASE = '/api/tmdb';
 
 // The token stays in the Vite server environment and is never bundled into browser code.
-export const tmdbEnabled = () => import.meta.env.VITE_TMDB_ENABLED === true;
+export const tmdbEnabled = () => [true, 'true'].includes(import.meta.env.VITE_TMDB_ENABLED);
 
 async function get(path, params = {}) {
   const url = new URL(BASE, window.location.origin);
@@ -103,7 +103,7 @@ export async function tmdbPerson(id) {
     if (credit.media_type !== 'movie' && credit.media_type !== 'tv') return;
     if (!credit.poster_path) return;
     if ((credit.genre_ids || []).some((genre) => genre === 10767 || genre === 10763)) return;
-    if (/self|himself|herself/i.test(credit.character || '')) return;
+    if (/\b(?:self|himself|herself)\b/i.test(credit.character || '')) return;
     const key = `${credit.media_type}:${credit.id}`;
     if (!seen.has(key)) seen.set(key, credit);
   });
@@ -128,7 +128,7 @@ export async function tmdbRecommendations(type, id, page = 1) {
   return (data.results || []).map((item) => normalizeMedia(item, type));
 }
 
-export async function tmdbTrending(window = 'week') {
-  const data = await get(`/trending/all/${window}`);
+export async function tmdbTrending(timeWindow = 'week') {
+  const data = await get(`/trending/all/${timeWindow}`);
   return (data.results || []).map((r) => normalizeMedia(r));
 }

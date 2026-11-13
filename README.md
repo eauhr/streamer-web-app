@@ -66,7 +66,7 @@ api/          Serverless TMDB proxy
 src/
   components/ UI, layout, player, media cards, detail views
   pages/      Home, Catalog, Watch, Search, Person, MyList, Builder, Docs
-  lib/        TMDB client, player providers, local storage, auth
+  lib/        TMDB client, player providers, local storage
   hooks/      Shared React hooks
 ```
 

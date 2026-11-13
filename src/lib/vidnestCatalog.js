@@ -8,7 +8,7 @@ function normalizeEntry(entry, fallbackType) {
   return {
     id: String(id),
     mediaType,
-    title: entry.orig_title || entry.title || entry.name || 'Untitled',
+    title: entry.title || entry.name || entry.orig_title || 'Untitled',
     originalTitle: entry.original_title || entry.original_name || entry.orig_title || '',
     overview: '',
     posterPath: entry.poster_path || entry.posterPath || entry.poster_url || entry.poster || null,
@@ -23,7 +23,7 @@ function normalizeEntry(entry, fallbackType) {
     certification: 'NR',
     runtime: 0,
     episodeRuntime: 0,
-    seasons: mediaType === 'tv' ? [1] : [],
+    seasons: [],
     imdbId: entry.imdb_id || entry.imdbid || null,
     quality: entry.Quality || entry.quality || null,
     catalogSource: 'vidnest',
