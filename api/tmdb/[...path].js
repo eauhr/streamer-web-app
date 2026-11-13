@@ -1,4 +1,4 @@
-const ALLOWED_PATH = /^\/(?:search\/(?:multi|tv)|configuration\/languages|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|person\/\d+(?:\/combined_credits)?|(?:movie|tv)\/(?:popular|top_rated|\d+(?:\/(?:watch\/providers|recommendations))?))$/;
+const ALLOWED_PATH = /^\/(?:search\/(?:multi|tv)|configuration\/languages|trending\/all\/(?:day|week)|discover\/(?:movie|tv)|genre\/(?:movie|tv)\/list|watch\/providers\/regions|person\/\d+(?:\/combined_credits)?|(?:movie|tv)\/\d+(?:\/(?:watch\/providers|recommendations))?)$/;
 
 function getProxyPath(req, requestUrl) {
   const routePath = req.query?.path;
@@ -53,6 +53,11 @@ export default async function handler(req, res) {
     });
     res.status(upstream.status);
     res.setHeader('Content-Type', 'application/json');
+    if (upstream.ok) {
+      res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    } else {
+      res.setHeader('Cache-Control', 'no-store');
+    }
     res.send(await upstream.text());
   } catch (error) {
     const status = error.name === 'TimeoutError' ? 504 : 502;
