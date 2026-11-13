@@ -39,7 +39,7 @@ export default function Docs() {
           <CodeBlock code={`window.addEventListener('message', (e) => {\n  if (!e.origin.includes('peachify')) return;\n  const { event, currentTime, duration } = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;\n  // event: 'play' | 'pause' | 'timeupdate' | 'ended'\n});`} />
         </Section>
         <Section id="sources" title="Streaming sources">
-          <p>TeeV can play the same title from several embed providers. On a title page, use the <strong className="text-white">Source</strong> switcher under the player to try another fetcher if one is unavailable — your choice is remembered on this device.</p>
+          <p>TeeV can play the same title from several embed providers. On a title page, use the <strong className="text-white">Source</strong> switcher under the player to try another fetcher if one is unavailable. Your choice is remembered for the current browser tab and does not change the source in other open tabs.</p>
           <ul className="list-disc space-y-1 pl-5">
             <li><strong className="text-white">Peachify</strong> — <code className="font-mono text-white">peachify.top/embed/movie/&#123;id&#125;</code> and <code className="font-mono text-white">peachify.top/embed/tv/&#123;id&#125;/&#123;s&#125;/&#123;e&#125;</code></li>
             <li><strong className="text-white">VidNest</strong> — <code className="font-mono text-white">vidnest.pro/movie/&#123;id&#125;</code> and <code className="font-mono text-white">vidnest.pro/tv/&#123;id&#125;/&#123;s&#125;/&#123;e&#125;</code></li>

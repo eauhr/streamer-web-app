@@ -56,9 +56,12 @@ export const reactionStore = {
 };
 
 export const providerStore = {
-  get: () => localStorage.getItem(KEYS.provider) || 'peachify',
+  // Keep the selected source in this browser tab only. A localStorage value is
+  // read as a one-time migration/default for existing users, but new changes
+  // must not propagate to other open tabs.
+  get: () => sessionStorage.getItem(KEYS.provider) || localStorage.getItem(KEYS.provider) || 'peachify',
   set: (id) => {
-    localStorage.setItem(KEYS.provider, id);
+    sessionStorage.setItem(KEYS.provider, id);
     window.dispatchEvent(new CustomEvent(STORAGE_EVENT, { detail: KEYS.provider }));
   },
 };
