@@ -4,6 +4,10 @@
     {
       "source": "^/api/tmdb/(.+)$",
       "destination": "/api/tmdb?path=/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
