@@ -5,6 +5,7 @@ import { queryClientInstance } from '@/lib/query-client';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
+import { Analytics } from '@vercel/analytics/react';
 
 const Layout = lazy(() => import('@/components/layout/Layout'));
 const Home = lazy(() => import('@/pages/Home'));
@@ -58,6 +59,7 @@ function App() {
           <AppRoutes />
         </Router>
         <Toaster />
+        <Analytics />
       </QueryClientProvider>
     </AppErrorBoundary>
   );
