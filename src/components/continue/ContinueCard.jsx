@@ -2,14 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Play, X } from 'lucide-react';
 import Artwork from '@/components/media/Artwork';
-import { backdropUrl, formatDuration, posterUrl } from '@/lib/tmdb';
+import { backdropUrl, detailsHref, formatDuration, posterUrl } from '@/lib/tmdb';
 import { continueStore } from '@/lib/storage';
 
 export default function ContinueCard({ entry, className = '' }) {
   const pct = entry.durationSeconds ? Math.min(100, (entry.watchedSeconds / entry.durationSeconds) * 100) : 0;
   const remaining = Math.max(0, entry.durationSeconds - entry.watchedSeconds);
   const epLabel = entry.type === 'tv' ? `S${entry.season} · E${entry.episode}` : 'Movie';
-  const href = `/watch/${entry.id}?type=${entry.type}&play=1`;
+  const href = detailsHref({ id: entry.id, mediaType: entry.type }, { play: '1' });
 
   return (
     <div className={`group relative snap-start ${className}`}>

@@ -23,7 +23,10 @@ export const releaseYear = (item) => (item?.releaseDate || item?.firstAirDate ||
 export const titleOf = (raw) => raw?.title || raw?.name || 'Untitled';
 export const genreNames = (ids = []) => ids.map((id) => GENRES[id]).filter(Boolean);
 export const typeLabel = (item) => (item.mediaType === 'tv' ? 'Series' : 'Movie');
-export const detailsHref = (item) => `/watch/${item.id}?type=${item.mediaType}`;
+export const detailsHref = (item, params = {}) => {
+  const query = new URLSearchParams({ type: item.mediaType, ...params });
+  return `/watch/${encodeURIComponent(item.id)}?${query.toString()}`;
+};
 export const formatRating = (v) => (v ? Number(v).toFixed(1) : '—');
 
 export const normalizeCast = (credits) =>

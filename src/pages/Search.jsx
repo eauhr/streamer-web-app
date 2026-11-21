@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { SearchX } from 'lucide-react';
@@ -11,7 +11,12 @@ export default function Search() {
   const q = params.get('q') || '';
   const canSearch = q.trim().length >= 2;
   const page = Math.max(1, Number(params.get('page')) || 1);
-  const { data = [], isFetching } = useQuery({
+  useEffect(() => {
+    document.title = q ? `Search: ${q} | TeeV` : 'Search | TeeV';
+    return () => { document.title = 'TeeV'; };
+  }, [q]);
+
+  const { data = { items: [], page: 1, totalPages: 1 }, isFetching, isError } = useQuery({
     queryKey: ['search', q, page],
     queryFn: () => catalogApi.search(q, page),
     enabled: canSearch,
@@ -22,6 +27,7 @@ export default function Search() {
     if (q) next.set('q', q);
     if (nextPage > 1) next.set('page', String(nextPage));
     setParams(next, { replace: true });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
   return (
@@ -31,19 +37,20 @@ export default function Search() {
         <h1 className="text-2xl font-bold tracking-[-0.03em] sm:text-3xl">{q ? <>Results for “{q}”</> : 'Search TeeV'}</h1>
         {isFetching && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-teev-lime" aria-label="Loading" />}
       </div>
-      {!q && <p className="text-[#A1A1AA]">Find movies and series by title, actor or genre.</p>}
+      {!q && <p className="text-[#A1A1AA]">Find movies and series by title or person.</p>}
       {q && !canSearch && <p className="text-[#A1A1AA]">Type at least 2 characters to search.</p>}
+      {canSearch && isError && <p role="alert" className="text-[#A1A1AA]">Search failed. Please try again.</p>}
       {canSearch && data.items?.length > 0 && <PosterGrid items={data.items} />}
       {q && data.totalPages > 1 && <nav aria-label="Search result pages" className="flex items-center justify-center gap-4 py-10">
         <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="rounded-full border border-white/15 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-40">Previous</button>
         <span className="text-sm text-[#A1A1AA]">Page {data.page} of {data.totalPages}</span>
         <button type="button" disabled={page >= data.totalPages} onClick={() => setPage(page + 1)} className="rounded-full border border-white/15 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-40">Next</button>
       </nav>}
-      {canSearch && !isFetching && data.items?.length === 0 && (
+      {canSearch && !isError && !isFetching && data.items?.length === 0 && (
         <div className="flex flex-col items-center py-20 text-center">
           <SearchX className="h-10 w-10 text-[#666]" aria-hidden="true" />
           <p className="mt-4 text-lg font-semibold">No matches for “{q}”</p>
-          <p className="mt-1 text-sm text-[#A1A1AA]">Try a different title, actor or genre.</p>
+          <p className="mt-1 text-sm text-[#A1A1AA]">Try a different title or person.</p>
         </div>
       )}
     </div>

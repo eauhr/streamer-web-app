@@ -46,7 +46,7 @@ export default function Hero({ items = [] }) {
             </p>
             <h1 className="mt-2 text-[2.6rem] font-extrabold leading-[0.95] tracking-[-0.035em] text-white sm:text-6xl lg:text-7xl">{item.title}</h1>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link to={`${detailsHref(item)}&play=1`} className="btn-primary"><Play className="h-4 w-4 fill-current" aria-hidden="true" /> Watch now</Link>
+              <Link to={detailsHref(item, { play: '1' })} className="btn-primary"><Play className="h-4 w-4 fill-current" aria-hidden="true" /> Watch now</Link>
               <Link to={detailsHref(item)} className="btn-ghost"><Info className="h-4 w-4" aria-hidden="true" /> Details</Link>
             </div>
             <p className="mt-5 line-clamp-3 max-w-lg text-sm leading-relaxed text-[#D4D4D8] sm:text-base">{item.overview}</p>

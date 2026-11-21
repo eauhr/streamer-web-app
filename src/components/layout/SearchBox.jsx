@@ -32,8 +32,8 @@ export default function SearchBox({ className = '', autoFocus = false, large = f
         value={value}
         onChange={onChange}
         autoFocus={autoFocus}
-        placeholder="Titles, people, genres"
-        aria-label="Search titles, people and genres"
+        placeholder="Titles or people"
+        aria-label="Search titles and people"
         className={`w-full rounded-full border border-white/10 bg-transparent pl-10 pr-9 text-white placeholder:text-[#666] transition focus:border-white/25 focus:bg-white/[0.04] focus:outline-none [&::-webkit-search-cancel-button]:hidden ${large ? 'h-12 text-base' : 'h-10 text-sm'}`}
       />
       {value && (
