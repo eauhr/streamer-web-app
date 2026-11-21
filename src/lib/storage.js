@@ -67,9 +67,9 @@ export const providerStore = {
   // Keep the selected source in this browser tab only. A localStorage value is
   // read as a one-time migration/default for existing users, but new changes
   // must not propagate to other open tabs.
-  get: () => safeStorageRead('sessionStorage', KEYS.provider) || safeStorageRead('localStorage', KEYS.provider) || 'peachify',
+  get: () => safeStorageRead('sessionStorage', KEYS.provider) || safeStorageRead('localStorage', KEYS.provider) || 'auto',
   getForTitle: (type, id, providerIds) => {
-    const selected = safeStorageRead('sessionStorage', KEYS.provider) || safeStorageRead('localStorage', KEYS.provider) || 'peachify';
+    const selected = safeStorageRead('sessionStorage', KEYS.provider) || safeStorageRead('localStorage', KEYS.provider) || 'auto';
     return selected === 'auto' ? sourceAdvisor.getBest(type, id, providerIds) : selected;
   },
   set: (id) => {

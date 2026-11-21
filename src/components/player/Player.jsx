@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import useStore from '@/hooks/useStore';
-import { getProvider, parsePlayerMessage, PROVIDER_ORDER } from '@/lib/player';
+import { AUTO_PROVIDER_ORDER, getProvider, parsePlayerMessage } from '@/lib/player';
 import { continueStore, providerStore, sourceAdvisor } from '@/lib/storage';
 
 export default function Player({ item, season = 1, episode = 1, startAt = 0, autoplay = true, onEnded }) {
-  const providerId = useStore(() => providerStore.getForTitle(item.mediaType, item.id, PROVIDER_ORDER), [item.mediaType, item.id]);
+  const providerId = useStore(() => providerStore.getForTitle(item.mediaType, item.id, AUTO_PROVIDER_ORDER), [item.mediaType, item.id]);
   const provider = getProvider(providerId, item.mediaType);
   const isTv = item.mediaType === 'tv';
   const src = useMemo(
@@ -85,6 +85,7 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
             );
           }
         }}
+        onError={() => sourceAdvisor.report(item.mediaType, item.id, provider.id, 'unavailable')}
         className="absolute inset-0 h-full w-full"
       />
     </div>
