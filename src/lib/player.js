@@ -215,13 +215,15 @@ export const PLAYER_PROVIDERS = {
   },
 };
 
-export const PROVIDER_ORDER = [
-  'peachify', 'vidnest', 'vidnest-fun', 'vidy', 'vidspark',
-  'viduki-1', 'viduki-2', 'viduki-3', 'viduki-4',
-  'vidsrc', 'vidup', 'vidfast', 'vidrock',
-  'vidrift', 'vidcore', 'embos', 'vidlink',
+export const PROVIDER_GROUPS = [
+  { id: 'original', label: 'Source 1 · Original', providers: ['peachify', 'vidnest', 'vidrift', 'vidcore', 'embos', 'vidlink'] },
+  { id: 'added', label: 'Source 2 · Added', providers: ['vidnest-fun', 'vidy', 'vidspark', 'viduki-1', 'viduki-2', 'viduki-3', 'viduki-4', 'vidsrc', 'vidup', 'vidfast', 'vidrock'] },
 ];
-export const DEFAULT_PROVIDER = 'peachify';
+export const PROVIDER_ORDER = PROVIDER_GROUPS.flatMap((group) => group.providers);
+// Peachify is kept as a manual original source, but Auto skips it because it
+// was reported as unusable. The remaining original sources come before the new ones.
+export const AUTO_PROVIDER_ORDER = PROVIDER_ORDER.filter((id) => id !== 'peachify');
+export const DEFAULT_PROVIDER = 'vidnest';
 export const getProvider = (id, type = null) => {
   const provider = PLAYER_PROVIDERS[id] || PLAYER_PROVIDERS[DEFAULT_PROVIDER];
   return type && !provider.supports.includes(type) ? PLAYER_PROVIDERS[DEFAULT_PROVIDER] : provider;
