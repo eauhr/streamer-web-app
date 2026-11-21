@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import useStore from '@/hooks/useStore';
-import { getProvider, parsePlayerMessage } from '@/lib/player';
-import { continueStore, providerStore } from '@/lib/storage';
+import { getProvider, parsePlayerMessage, PROVIDER_ORDER } from '@/lib/player';
+import { continueStore, providerStore, sourceAdvisor } from '@/lib/storage';
 
 export default function Player({ item, season = 1, episode = 1, startAt = 0, autoplay = true, onEnded }) {
-  const providerId = useStore(() => providerStore.get(), []);
+  const providerId = useStore(() => providerStore.getForTitle(item.mediaType, item.id, PROVIDER_ORDER), [item.mediaType, item.id]);
   const provider = getProvider(providerId, item.mediaType);
   const isTv = item.mediaType === 'tv';
   const src = useMemo(
@@ -15,7 +15,7 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
   const state = useRef({});
 
   useEffect(() => {
-    state.current = { watched: startAt, duration: ((isTv ? item.episodeRuntime : item.runtime) || 45) * 60, lastSave: 0, ended: false };
+    state.current = { watched: startAt, duration: ((isTv ? item.episodeRuntime : item.runtime) || 45) * 60, lastSave: 0, ended: false, sourceReported: false };
     const save = () => {
       if (state.current.ended) return;
       continueStore.save({
@@ -30,9 +30,18 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
       const m = parsePlayerMessage(e.data);
       if (!m) return;
       if (m.event === 'viduki:all-servers-failed') {
+        sourceAdvisor.report(item.mediaType, item.id, provider.id, 'unavailable');
         const tier = Number(provider.id.match(/^viduki-(\d)$/)?.[1]);
-        if (tier >= 1 && tier < 4) providerStore.set(`viduki-${tier + 1}`);
+        if (tier >= 1 && tier < 4 && providerStore.get() !== 'auto') providerStore.set(`viduki-${tier + 1}`);
         return;
+      }
+      if (/error|fail|unavailable/.test(m.event)) {
+        sourceAdvisor.report(item.mediaType, item.id, provider.id, 'unavailable');
+        return;
+      }
+      if (!state.current.sourceReported && (m.currentTime > 0 || /playing|play|timeupdate/.test(m.event))) {
+        state.current.sourceReported = true;
+        sourceAdvisor.report(item.mediaType, item.id, provider.id, 'works');
       }
       if (m.duration) state.current.duration = m.duration;
       if (m.currentTime != null) state.current.watched = m.currentTime;
@@ -55,7 +64,7 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
       window.removeEventListener('message', onMessage);
       window.removeEventListener('beforeunload', save);
     };
-  }, [src]);
+  }, [src, item.mediaType, item.id, item.title, item.episodeRuntime, item.runtime, item.posterPath, item.backdropPath, season, episode, startAt, provider.id, isTv, onEnded]);
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
