@@ -5,7 +5,7 @@ import { continueStore, providerStore } from '@/lib/storage';
 
 export default function Player({ item, season = 1, episode = 1, startAt = 0, autoplay = true, onEnded }) {
   const providerId = useStore(() => providerStore.get(), []);
-  const provider = getProvider(providerId);
+  const provider = getProvider(providerId, item.mediaType);
   const isTv = item.mediaType === 'tv';
   const src = useMemo(
     () => provider.buildUrl({ type: item.mediaType, id: item.id, season, episode, startAt, autoplay }),
@@ -29,6 +29,11 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
       if (e.origin !== provider.origin) return;
       const m = parsePlayerMessage(e.data);
       if (!m) return;
+      if (m.event === 'viduki:all-servers-failed') {
+        const tier = Number(provider.id.match(/^viduki-(\d)$/)?.[1]);
+        if (tier >= 1 && tier < 4) providerStore.set(`viduki-${tier + 1}`);
+        return;
+      }
       if (m.duration) state.current.duration = m.duration;
       if (m.currentTime != null) state.current.watched = m.currentTime;
       if (/end|complete/.test(m.event)) {
@@ -60,7 +65,7 @@ export default function Player({ item, season = 1, episode = 1, startAt = 0, aut
         src={src}
         title={`${item.title}${isTv ? ` season ${season} episode ${episode}` : ''} player`}
         sandbox={provider.sandbox}
-        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        allow={provider.allow || 'autoplay; fullscreen; picture-in-picture; encrypted-media'}
         allowFullScreen
         referrerPolicy="origin"
         onLoad={() => {

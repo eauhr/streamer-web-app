@@ -47,7 +47,7 @@ export default function WatchView({ item, autoPlay }) {
         {playing && (
           <section ref={playerRef} aria-label="Player" className="mb-10 space-y-4">
             <Player item={item} season={season} episode={episode} startAt={startAt} autoplay onEnded={next} />
-            <ProviderSwitcher />
+            <ProviderSwitcher mediaType={item.mediaType} />
             {isTv && (item.seasonDetails?.length || item.seasons?.length) > 0 && <EpisodePicker seasons={item.seasons} seasonDetails={item.seasonDetails} season={season} episode={episode} onChange={choose} />}
           </section>
         )}

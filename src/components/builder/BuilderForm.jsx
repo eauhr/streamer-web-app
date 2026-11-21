@@ -12,7 +12,7 @@ export default function BuilderForm({ value, onChange }) {
       <div className="sm:col-span-2">
         <span className="mb-1.5 block text-xs font-medium text-[#A1A1AA]">Source</span>
         <div role="group" aria-label="Source" className="flex flex-wrap gap-2">
-          {PROVIDER_ORDER.map((id) => (
+          {PROVIDER_ORDER.filter((id) => getProvider(id).supports.includes(value.type)).map((id) => (
             <button key={id} type="button" aria-pressed={value.provider === id} onClick={() => onChange({ ...value, provider: id })} className={`chip ${value.provider === id ? 'chip-active' : ''}`}>
               {getProvider(id).name}
             </button>
@@ -23,7 +23,7 @@ export default function BuilderForm({ value, onChange }) {
         <span className="mb-1.5 block text-xs font-medium text-[#A1A1AA]">Content type</span>
         <div role="group" aria-label="Content type" className="flex gap-2">
           {['movie', 'tv'].map((t) => (
-            <button key={t} type="button" aria-pressed={value.type === t} onClick={() => onChange({ ...value, type: t })} className={`chip ${value.type === t ? 'chip-active' : ''}`}>
+            <button key={t} type="button" aria-pressed={value.type === t} onClick={() => onChange({ ...value, type: t, provider: getProvider(value.provider, t).id })} className={`chip ${value.type === t ? 'chip-active' : ''}`}>
               {t === 'movie' ? 'Movie' : 'TV episode'}
             </button>
           ))}

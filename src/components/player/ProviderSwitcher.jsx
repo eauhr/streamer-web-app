@@ -3,13 +3,13 @@ import useStore from '@/hooks/useStore';
 import { PROVIDER_ORDER, getProvider } from '@/lib/player';
 import { providerStore } from '@/lib/storage';
 
-export default function ProviderSwitcher({ className = '' }) {
+export default function ProviderSwitcher({ mediaType, className = '' }) {
   const storedProvider = useStore(() => providerStore.get(), []);
-  const active = getProvider(storedProvider).id;
+  const active = getProvider(storedProvider, mediaType).id;
   return (
     <div role="group" aria-label="Streaming source" className={`flex flex-wrap items-center gap-2 ${className}`}>
       <span className="text-xs text-[#A1A1AA]">Source:</span>
-      {PROVIDER_ORDER.map((id) => {
+      {PROVIDER_ORDER.filter((id) => getProvider(id).supports.includes(mediaType)).map((id) => {
         const p = getProvider(id);
         const on = active === id;
         return (
